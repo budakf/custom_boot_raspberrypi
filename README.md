@@ -1,5 +1,12 @@
 # custom_boot_raspberrypi
 
+## Zero Step
+
+```sh
+$BOOT_DIR = /mnt/BOOT
+$ROOT_DIR = /mnt/ROOT
+```
+
 ## First Step : Toolchain Generation using crosstool-ng
 ```sh
 #download crosstool-ng
@@ -53,6 +60,16 @@ make
 wget https://github.com/raspberrypi/firmware/tree/master/boot/bootcode.bin
 wget https://github.com/raspberrypi/firmware/tree/master/boot/start4.elf
 wget https://github.com/raspberrypi/firmware/tree/master/boot/fixup4.dat
+
+
+cat << EOF > boot_cmd.txt
+fatload mmc 0:1 \${kernel_addr_r} Image
+setenv bootargs "console=serial0,115200 console=tty1 root=/dev/mmcblk0p2 rw rootwait init=/bin/sh"
+booti \${kernel_addr_r} - \${fdt_addr}
+EOF
+
+$U_BOOT_FOLDER/tools/mkimage -A arm64 -O linux -T script -C none -d boot_cmd.txt boot.scr
+
 ```
 
 ## Third Step : Build Linux Kernel
@@ -75,31 +92,12 @@ make CROSS_COMPILE="$CROSS_COMPILE"
 sudo make CROSS_COMPILE="$CROSS_COMPILE" install
 ```
 
-## Fifth Step : Copy Files
-```sh
-cp $U_BOOT_FOLDER/{bootcode.bin,start.elf,u-boot.bin,fixup4.dat} $BOOT_DIR
-cp $LINUX_FOLDER/arch/arm64/boot/Image $BOOT_DIR
-cp $LINUX_FOLDER/arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dtb $BOOT_DIR
-
-cp -a -R $BUSYBOX_FOLDER/_install/{bin,sbin,usr,linuxrc} $ROOT_DIR
-$SYS_ROOT=~/x-tools/aarch64-rpi3-linux-gnu/bin/aarch64-rpi3-linux-gnu-g++ -print-sysroot
-cp -a -R $SYS_ROOT/{lib,lib64} $ROOT_DIR
-
-cat << EOF > config.txt
-enable_uart=1
-arm_64bit=1
-kernel=u-boot.bin
-EOF
-
-mv config.txt $BOOT_DIR
-```
-
-## Last Step : Prepare SD Card
+## Fifth Step : Prepare SD Card
 ```sh
 please find sdcard device name using `lsblk`  e.g. /dev/sdb
 sudo fdisk /dev/sdb
-#delete all available partitions usind `d`
-#create new 2 partitions
+#delete all available partitions using `d`
+#create new 2 partitions to track following character-commands:
 n
 p
 1
@@ -113,10 +111,40 @@ Y
 
 t
 1
+L
 b
 
 p 
 w
 
 sync
+
+
+sudo mkfs.vfat -F 32 -n BOOT /dev/sdb1
+sudo mkfs.ext4 -L ROOT /dev/sdb2
+
+sudo mount /dev/sdb1 $BOOT_DIR
+sudo mount /dev/sdb2 $ROOT_DIR
+
+```
+
+## Last Step : Copy Files
+```sh
+cp $U_BOOT_FOLDER/{bootcode.bin,start.elf,u-boot.bin,fixup4.dat} $BOOT_DIR
+cp $U_BOOT_FOLDER/boot.scr $BOOT_DIR
+cp $LINUX_FOLDER/arch/arm64/boot/Image $BOOT_DIR
+cp $LINUX_FOLDER/arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dtb $BOOT_DIR
+
+cp -a -R $BUSYBOX_FOLDER/_install/{bin,sbin,usr,linuxrc} $ROOT_DIR
+$SYS_ROOT=~/x-tools/aarch64-rpi3-linux-gnu/bin/aarch64-rpi3-linux-gnu-g++ -print-sysroot
+cp -a -R $SYS_ROOT/{lib,lib64} $ROOT_DIR
+
+
+cat << EOF > config.txt
+enable_uart=1
+arm_64bit=1
+kernel=u-boot.bin
+EOF
+
+mv config.txt $BOOT_DIR
 ```
