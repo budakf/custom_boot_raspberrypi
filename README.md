@@ -27,22 +27,21 @@ ct-ng show-aarch64-rpi3-linux-gnu
 ct-ng aarch64-rpi3-linux-gnu
 ct-ng menuconfig  # if you want change configs
 ct-ng build
-```
 
-Notes: \
-if you get expat library downloading error, \
-download this library manually under .build/tarballs directory: \
+Notes:
+if you get expat library downloading error,
+download this library manually under .build/tarballs directory:
 wget https://toolchains.bootlin.com/downloads/releases/sources/expat-2.2.6/expat-2.2.6.tar.bz2
 
-if you get isl library downloading error, \
-download this library manually under .build/tarballs directory: \
+if you get isl library downloading error,
+download this library manually under .build/tarballs directory:
 wget https://libisl.sourceforge.io/isl-0.20.tar.gz
 
-if you get cross-gdb installation related error \
+if you get cross-gdb installation related error
 install python3-dev
 
-```sh
-toolchain default path: ~/x-tools/aarch64-rpi3-linux-gnu
+
+toolchain default installed-path: ~/x-tools/aarch64-rpi3-linux-gnu
 ```
 
 ## Second Step : Build Bootloader(U-Boot)
@@ -67,9 +66,7 @@ fatload mmc 0:1 \${kernel_addr_r} Image
 setenv bootargs "console=serial0,115200 console=tty1 root=/dev/mmcblk0p2 rw rootwait init=/bin/sh"
 booti \${kernel_addr_r} - \${fdt_addr}
 EOF
-
 $U_BOOT_FOLDER/tools/mkimage -A arm64 -O linux -T script -C none -d boot_cmd.txt boot.scr
-
 ```
 
 ## Third Step : Build Linux Kernel
@@ -80,7 +77,7 @@ make ARCH=arm64 CROSS_COMPILE=aarch64-rpi3-linux-gnu- bcm2711_defconfig
 make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-rpi3-linux-gnu-
 ```
 
-## Forth Step : Build Busybox for Create RootFS
+## Fourth Step : Build Busybox to Create RootFS
 ```sh
 wget https://busybox.net/downloads/busybox-1.33.2.tar.bz2
 tar xf busybox-1.33.2.tar.bz2
@@ -92,7 +89,7 @@ make CROSS_COMPILE="$CROSS_COMPILE"
 sudo make CROSS_COMPILE="$CROSS_COMPILE" install
 ```
 
-## Fifth Step : Prepare SD Card
+## Fifth Step : Prepare SD Card Partition
 ```sh
 please find sdcard device name using `lsblk`  e.g. /dev/sdb
 sudo fdisk /dev/sdb
@@ -125,26 +122,24 @@ sudo mkfs.ext4 -L ROOT /dev/sdb2
 
 sudo mount /dev/sdb1 $BOOT_DIR
 sudo mount /dev/sdb2 $ROOT_DIR
-
 ```
 
-## Last Step : Copy Files
+## Last Step : Copy Files into SD Card
 ```sh
 cp $U_BOOT_FOLDER/{bootcode.bin,start.elf,u-boot.bin,fixup4.dat} $BOOT_DIR
 cp $U_BOOT_FOLDER/boot.scr $BOOT_DIR
 cp $LINUX_FOLDER/arch/arm64/boot/Image $BOOT_DIR
 cp $LINUX_FOLDER/arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dtb $BOOT_DIR
 
-cp -a -R $BUSYBOX_FOLDER/_install/{bin,sbin,usr,linuxrc} $ROOT_DIR
-$SYS_ROOT=~/x-tools/aarch64-rpi3-linux-gnu/bin/aarch64-rpi3-linux-gnu-g++ -print-sysroot
-cp -a -R $SYS_ROOT/{lib,lib64} $ROOT_DIR
-
-
 cat << EOF > config.txt
 enable_uart=1
 arm_64bit=1
 kernel=u-boot.bin
 EOF
-
 mv config.txt $BOOT_DIR
+
+
+cp -a -R $BUSYBOX_FOLDER/_install/{bin,sbin,usr,linuxrc} $ROOT_DIR
+$SYS_ROOT=~/x-tools/aarch64-rpi3-linux-gnu/bin/aarch64-rpi3-linux-gnu-g++ -print-sysroot
+cp -a -R $SYS_ROOT/{lib,lib64} $ROOT_DIR
 ```
