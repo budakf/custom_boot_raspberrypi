@@ -1,13 +1,13 @@
 # custom_boot_raspberrypi
 
-## Zero Step
+## )0. Step
 
 ```sh
 $BOOT_DIR = /mnt/BOOT
 $ROOT_DIR = /mnt/ROOT
 ```
 
-## First Step : Toolchain Generation using crosstool-ng
+## 1. Step : Toolchain Generation using crosstool-ng
 ```sh
 #download crosstool-ng
 git clone https://github.com/crosstool-ng/crosstool-ng
@@ -44,7 +44,7 @@ install python3-dev
 toolchain default installed-path: ~/x-tools/aarch64-rpi3-linux-gnu
 ```
 
-## Second Step : Build Bootloader(U-Boot)
+## 2. Step : Build Bootloader(U-Boot)
 ```sh
 git clone git://git.denx.de/u-boot.git
 cd u-boot
@@ -69,7 +69,7 @@ EOF
 $U_BOOT_FOLDER/tools/mkimage -A arm64 -O linux -T script -C none -d boot_cmd.txt boot.scr
 ```
 
-## Third Step : Build Linux Kernel
+## 3. Step : Build Linux Kernel
 ```sh
 git clone --depth=1 -b rpi-5.10.y https://github.com/raspberrypi/linux.git
 cd linux
@@ -77,7 +77,7 @@ make ARCH=arm64 CROSS_COMPILE=aarch64-rpi3-linux-gnu- bcm2711_defconfig
 make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-rpi3-linux-gnu-
 ```
 
-## Fourth Step : Build Busybox to Create RootFS
+## 4. Step : Build Busybox to Create RootFS
 ```sh
 wget https://busybox.net/downloads/busybox-1.33.2.tar.bz2
 tar xf busybox-1.33.2.tar.bz2
@@ -89,7 +89,7 @@ make CROSS_COMPILE="$CROSS_COMPILE"
 sudo make CROSS_COMPILE="$CROSS_COMPILE" install
 ```
 
-## Fifth Step : Prepare SD Card Partition
+## 5. Step : Prepare SD Card Partition
 ```sh
 please find sdcard device name using `lsblk`  e.g. /dev/sdb
 sudo fdisk /dev/sdb
@@ -124,7 +124,7 @@ sudo mount /dev/sdb1 $BOOT_DIR
 sudo mount /dev/sdb2 $ROOT_DIR
 ```
 
-## Last Step : Copy Files into SD Card
+## 6. Step : Copy Files into SD Card
 ```sh
 cp $U_BOOT_FOLDER/{bootcode.bin,start.elf,u-boot.bin,fixup4.dat} $BOOT_DIR
 cp $U_BOOT_FOLDER/boot.scr $BOOT_DIR
