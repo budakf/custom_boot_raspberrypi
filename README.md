@@ -1,6 +1,6 @@
 # custom_boot_raspberrypi
 
-## )0. Step
+## 0. Step
 
 ```sh
 $BOOT_DIR = /mnt/BOOT
